@@ -10,5 +10,6 @@
         android:id="@+id/action_about"
         android:orderInCategory="100"
         android:showAsAction="ifRoom"
-        android:title="@string/action_about" />
+        android:title="@string/action_about"
+        android:visible="false" />
 </menu>

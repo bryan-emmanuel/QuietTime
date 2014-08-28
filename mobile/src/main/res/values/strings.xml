@@ -6,7 +6,7 @@
     <string name="button_open_wear_app">Open watch app</string>
     <string name="action_about">About</string>
     <string name="action_send_debug">Send Debug</string>
-    <string name="about_message">Quiet Time mutes or unmutes the phone to match the connected watch whenever the watch screen dims.</string>
+    <string name="about_message">Quiet Time mutes or unmutes the phone to match the connected watch.</string>
     <string name="error_not_connected">Error; not connected to Play Services. Please try again later.</string>
     <string name="error_no_watches">Error; no connected watches found. Please make sure a watch is connected, and try again.</string>
     <string name="message_request_debug">Getting debug, please wait.</string>

@@ -6,13 +6,15 @@ import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.text.format.DateUtils;
 import android.util.Log;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.Wearable;
 import com.piusvelte.quiettime.BuildConfig;
-import com.piusvelte.quiettime.receiver.ScreenOffReceiver;
+import com.piusvelte.quiettime.receiver.ScreenReceiver;
 import com.piusvelte.quiettime.utils.DataHelper;
 
 import java.io.File;
@@ -29,11 +31,18 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
      * 118 is when in_zen_mode is the only preference set
      * 165 is when peek_privacy_mode is also set
      */
-    private static final long[] ZEN_MODE_TRUE = new long[] {118, 165};
+    private static final long[] ZEN_MODE_TRUE = new long[]{118, 165};
 
-    /** path for home_preferences.xml */
+    /**
+     * path for home_preferences.xml
+     */
     @SuppressLint("SdCardPath")
     private static final File HOME_PREFERENCES = new File("/data/data/com.google.android.wearable.app/shared_prefs/home_preferences.xml");
+
+    /**
+     * attempt to speed up sync by checking zen mode after the screen goes on, by this delay
+     */
+    private static final long SCREEN_ON_RUNNABLE_DELAY = DateUtils.SECOND_IN_MILLIS;
 
     private boolean mPreviouslyInZenMode;
     private Boolean mPendingZenModeChange;
@@ -41,6 +50,17 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
     private BroadcastReceiver mScreenOffReceiver;
 
     private GoogleApiClient mGoogleApiClient;
+
+    private Runnable mScreenOnRunnable = new Runnable() {
+        @Override
+        public void run() {
+            checkZenMode();
+            // continue to check this every second, until the screen turns off
+            mScreenHandler.postDelayed(mScreenOnRunnable, SCREEN_ON_RUNNABLE_DELAY);
+        }
+    };
+
+    private Handler mScreenHandler = new Handler();
 
     @Override
     public void onCreate() {
@@ -55,21 +75,23 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
 
         setInZenMode(inZenMode());
 
-        // use screen off as a trigger to check zen mode
         IntentFilter filter = new IntentFilter();
+        // for faster syncing, use screen off to post a delayed runnable
+        filter.addAction(Intent.ACTION_SCREEN_ON);
+        // use screen off as a trigger to check zen mode
         filter.addAction(Intent.ACTION_SCREEN_OFF);
-        mScreenOffReceiver = new ScreenOffReceiver();
+        mScreenOffReceiver = new ScreenReceiver();
         registerReceiver(mScreenOffReceiver, filter);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
-            boolean inZenMode = inZenMode();
-
-            if (inZenMode ^ mPreviouslyInZenMode) {
-                if (BuildConfig.DEBUG) Log.d(TAG, "zen mode change from " + mPreviouslyInZenMode + " to " + inZenMode);
-                setInZenMode(inZenMode);
+        if (intent != null) {
+            if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+                mScreenHandler.removeCallbacks(mScreenOnRunnable);
+                checkZenMode();
+            } else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
+                mScreenHandler.postDelayed(mScreenOnRunnable, SCREEN_ON_RUNNABLE_DELAY);
             }
         }
 
@@ -78,6 +100,7 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
 
     @Override
     public void onDestroy() {
+        mScreenHandler.removeCallbacks(mScreenOnRunnable);
         unregisterReceiver(mScreenOffReceiver);
         if (mGoogleApiClient.isConnected()) mGoogleApiClient.disconnect();
         super.onDestroy();
@@ -85,6 +108,18 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
 
     public static long getHomePreferencesSize() {
         return HOME_PREFERENCES.length();
+    }
+
+    private void checkZenMode() {
+        boolean inZenMode = inZenMode();
+
+        if (inZenMode ^ mPreviouslyInZenMode) {
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "zen mode change from " + mPreviouslyInZenMode + " to " + inZenMode);
+            }
+
+            setInZenMode(inZenMode);
+        }
     }
 
     private static boolean inZenMode() {
