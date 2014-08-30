@@ -3,7 +3,6 @@ package com.piusvelte.quiettime.service;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
-import android.util.Log;
 
 import com.google.android.gms.common.data.FreezableUtils;
 import com.google.android.gms.wearable.DataEvent;
@@ -12,8 +11,8 @@ import com.google.android.gms.wearable.DataItem;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.WearableListenerService;
-import com.piusvelte.quiettime.BuildConfig;
 import com.piusvelte.quiettime.utils.DataHelper;
+import com.piusvelte.quiettime.utils.PreferencesHelper;
 
 import java.util.List;
 
@@ -22,15 +21,12 @@ import java.util.List;
  */
 public class WearDataListenerService extends WearableListenerService {
 
-    private static final String TAG = WearDataListenerService.class.getSimpleName();
-
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
         super.onDataChanged(dataEvents);
 
         final List<DataEvent> events = FreezableUtils.freezeIterable(dataEvents);
-        if (BuildConfig.DEBUG) Log.d(TAG, "onDataChanged, events: " + events.size());
-        SharedPreferences sharedPreferences = DataHelper.getSharedPreferences(this);
+        SharedPreferences sharedPreferences = PreferencesHelper.getSharedPreferences(this);
 
         for (DataEvent event : events) {
             DataItem dataItem = event.getDataItem();
@@ -39,16 +35,22 @@ public class WearDataListenerService extends WearableListenerService {
             if (DataHelper.WEAR_PATH_SETTINGS.equals(path)) {
                 DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItem);
                 DataMap dataMap = dataMapItem.getDataMap();
-                DataHelper.storeFromDataMap(sharedPreferences, dataMap);
-            } else if (DataHelper.WEAR_PATH_ZEN_MODE.equals(path) && DataHelper.PREFERENCE.PREF_WEAR_TO_MOBILE_ENABLED.isEnabled(this)) {
+                PreferencesHelper.storeFromDataMap(sharedPreferences, dataMap);
+            } else if (DataHelper.WEAR_PATH_ZEN_MODE.equals(path)) {
                 DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItem);
                 DataMap dataMap = dataMapItem.getDataMap();
                 boolean inZenMode = dataMap.getBoolean(DataHelper.KEY_IN_ZEN_MODE);
-                int ringerMode = inZenMode ? AudioManager.RINGER_MODE_SILENT : AudioManager.RINGER_MODE_NORMAL;
                 AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
-                if (ringerMode != audioManager.getRingerMode()) {
-                    audioManager.setRingerMode(ringerMode);
+                if (inZenMode && PreferencesHelper.isMutePhoneEnabled(sharedPreferences)) {
+                    int muteMode = PreferencesHelper.getMutePhoneMode(sharedPreferences);
+
+                    if (muteMode != audioManager.getRingerMode()) {
+                        audioManager.setRingerMode(muteMode);
+                    }
+                } else if (PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences)
+                        && audioManager.getRingerMode() != AudioManager.RINGER_MODE_NORMAL) {
+                    audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
                 }
             }
         }

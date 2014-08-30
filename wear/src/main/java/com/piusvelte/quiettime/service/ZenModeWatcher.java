@@ -5,6 +5,7 @@ import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -16,6 +17,7 @@ import com.google.android.gms.wearable.Wearable;
 import com.piusvelte.quiettime.BuildConfig;
 import com.piusvelte.quiettime.receiver.ScreenReceiver;
 import com.piusvelte.quiettime.utils.DataHelper;
+import com.piusvelte.quiettime.utils.PreferencesHelper;
 
 import java.io.File;
 
@@ -42,7 +44,7 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
     /**
      * attempt to speed up sync by checking zen mode after the screen goes on, by this delay
      */
-    private static final long SCREEN_ON_RUNNABLE_DELAY = DateUtils.SECOND_IN_MILLIS;
+    private static final long SCREEN_ON_RUNNABLE_DELAY = 2 * DateUtils.SECOND_IN_MILLIS;
 
     private boolean mPreviouslyInZenMode;
     private Boolean mPendingZenModeChange;
@@ -135,8 +137,10 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
 
     private void setInZenMode(boolean inZenMode) {
         mPreviouslyInZenMode = inZenMode;
+        SharedPreferences sharedPreferences = PreferencesHelper.getSharedPreferences(this);
 
-        if (DataHelper.PREFERENCE.PREF_WEAR_TO_MOBILE_ENABLED.isEnabled(this)) {
+        if ((inZenMode && PreferencesHelper.isMutePhoneEnabled(sharedPreferences))
+            || (!inZenMode && PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences))) {
             if (mGoogleApiClient.isConnected()) {
                 mPendingZenModeChange = null;
                 DataHelper.syncZenMode(mGoogleApiClient, mPreviouslyInZenMode);

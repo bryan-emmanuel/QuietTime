@@ -2,6 +2,10 @@
 <resources>
 
     <string name="app_name">Quiet Time</string>
-    <string name="wear_to_mobile">Mute phone when watch muted</string>
+    <string name="radio_description">Mute sets phone to:</string>
+    <string name="radio_none">Neither</string>
+    <string name="radio_silent">Silent</string>
+    <string name="radio_vibrate">Vibrate</string>
+    <string name="chk_unmute">Unmute sets phone to normal</string>
 
 </resources>

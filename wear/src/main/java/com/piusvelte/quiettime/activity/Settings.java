@@ -3,21 +3,27 @@ package com.piusvelte.quiettime.activity;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioManager;
 import android.os.Bundle;
+import android.support.annotation.IdRes;
 import android.support.wearable.view.WatchViewStub;
-import android.view.View;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.RadioGroup;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.Wearable;
 import com.piusvelte.quiettime.R;
 import com.piusvelte.quiettime.service.ZenModeWatcher;
 import com.piusvelte.quiettime.utils.DataHelper;
+import com.piusvelte.quiettime.utils.PreferencesHelper;
 
-public class Settings extends Activity implements SharedPreferences.OnSharedPreferenceChangeListener, View.OnClickListener {
+public class Settings extends Activity implements SharedPreferences.OnSharedPreferenceChangeListener,RadioGroup.OnCheckedChangeListener,
+        CompoundButton.OnCheckedChangeListener {
 
     private SharedPreferences mSharedPreferences;
-    private CheckBox mChkWearToMobile;
+    private RadioGroup mGroupMute;
+    private CheckBox mChkUnmute;
 
     private GoogleApiClient mGoogleApiClient;
 
@@ -31,15 +37,18 @@ public class Settings extends Activity implements SharedPreferences.OnSharedPref
                 .addApi(Wearable.API)
                 .build();
 
-        mSharedPreferences = DataHelper.getSharedPreferences(this);
+        mSharedPreferences = PreferencesHelper.getSharedPreferences(this);
 
         final WatchViewStub stub = (WatchViewStub) findViewById(R.id.watch_view_stub);
         stub.setOnLayoutInflatedListener(new WatchViewStub.OnLayoutInflatedListener() {
             @Override
             public void onLayoutInflated(WatchViewStub stub) {
-                mChkWearToMobile = (CheckBox) findViewById(R.id.chk_wear_to_mobile);
-                mChkWearToMobile.setChecked(DataHelper.PREFERENCE.PREF_WEAR_TO_MOBILE_ENABLED.isEnabled(mSharedPreferences));
-                mChkWearToMobile.setOnClickListener(Settings.this);
+                mGroupMute = (RadioGroup) findViewById(R.id.grp_phone_ringer);
+                setMuteSelection(PreferencesHelper.getMutePhoneMode(mSharedPreferences));
+
+                mChkUnmute = (CheckBox) findViewById(R.id.chk_watch_unmute);
+                mChkUnmute.setChecked(PreferencesHelper.isUnmutePhoneEnabled(mSharedPreferences));
+                mChkUnmute.setOnCheckedChangeListener(Settings.this);
             }
         });
 
@@ -71,19 +80,71 @@ public class Settings extends Activity implements SharedPreferences.OnSharedPref
         super.onStop();
     }
 
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (DataHelper.PREFERENCE.PREF_WEAR_TO_MOBILE_ENABLED.value.equals(key)) {
-            mChkWearToMobile.setChecked(DataHelper.PREFERENCE.PREF_WEAR_TO_MOBILE_ENABLED.isEnabled(mSharedPreferences));
+    private void setMuteSelection(int preferenceValue) {
+        mGroupMute.setOnCheckedChangeListener(null);
+
+        switch (preferenceValue) {
+            case AudioManager.RINGER_MODE_SILENT:
+                mGroupMute.check(R.id.rdb_silent);
+                break;
+
+            case AudioManager.RINGER_MODE_VIBRATE:
+                mGroupMute.check(R.id.rdb_vibrate);
+                break;
+
+            default:
+                mGroupMute.check(R.id.rdb_none);
+                break;
+        }
+
+        mGroupMute.setOnCheckedChangeListener(this);
+    }
+
+    private int getMuteMode(@IdRes int resourceId) {
+        switch (resourceId) {
+            case R.id.rdb_silent:
+                return AudioManager.RINGER_MODE_SILENT;
+
+            case R.id.rdb_vibrate:
+                return AudioManager.RINGER_MODE_VIBRATE;
+
+            default:
+                return AudioManager.RINGER_MODE_NORMAL;
         }
     }
 
     @Override
-    public void onClick(View v) {
-        if (v == mChkWearToMobile) {
-            DataHelper.PREFERENCE prefKey = DataHelper.PREFERENCE.PREF_WEAR_TO_MOBILE_ENABLED;
-            prefKey.setEnabled(mSharedPreferences, mChkWearToMobile.isChecked());
-            prefKey.syncEnabled(mGoogleApiClient, mChkWearToMobile.isChecked());
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (PreferencesHelper.PREF_MUTE_PHONE_MODE.equals(key)) {
+            setMuteSelection(PreferencesHelper.getMutePhoneMode(sharedPreferences));
+        } else if (PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED.equals(key)) {
+            mChkUnmute.setOnCheckedChangeListener(null);
+            mChkUnmute.setChecked(PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences));
+            mChkUnmute.setOnCheckedChangeListener(this);
+        }
+    }
+
+    @Override
+    public void onCheckedChanged(RadioGroup group, int checkedId) {
+        int muteMode = getMuteMode(checkedId);
+
+        if (muteMode != PreferencesHelper.getMutePhoneMode(mSharedPreferences)) {
+            mSharedPreferences.edit()
+                    .putInt(PreferencesHelper.PREF_MUTE_PHONE_MODE, muteMode)
+                    .apply();
+            DataHelper.syncIntegerSetting(mGoogleApiClient, PreferencesHelper.PREF_MUTE_PHONE_MODE, muteMode);
+        }
+    }
+
+    @Override
+    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        if (buttonView == mChkUnmute) {
+            if (isChecked != PreferencesHelper.isUnmutePhoneEnabled(mSharedPreferences)) {
+                mSharedPreferences.edit()
+                        .putBoolean(PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED, mChkUnmute.isChecked())
+                        .apply();
+                DataHelper.syncBooleanSetting(mGoogleApiClient, PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED, mChkUnmute.isChecked());
+            }
         }
     }
 }

@@ -2,15 +2,18 @@ package com.piusvelte.quiettime.activity;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.IdRes;
 import android.support.v4.app.FragmentActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -25,19 +28,22 @@ import com.piusvelte.quiettime.BuildConfig;
 import com.piusvelte.quiettime.R;
 import com.piusvelte.quiettime.fragment.AboutDialog;
 import com.piusvelte.quiettime.utils.DataHelper;
+import com.piusvelte.quiettime.utils.PreferencesHelper;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class Settings extends FragmentActivity implements SharedPreferences.OnSharedPreferenceChangeListener, View.OnClickListener,
-        MessageApi.MessageListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class Settings extends FragmentActivity implements SharedPreferences.OnSharedPreferenceChangeListener, MessageApi.MessageListener,
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, RadioGroup.OnCheckedChangeListener,
+        CompoundButton.OnCheckedChangeListener {
 
     private static final String TAG = Settings.class.getSimpleName();
 
     private SharedPreferences mSharedPreferences;
-    private CheckBox mChkWearToMobile;
+    private RadioGroup mGroupMute;
+    private CheckBox mChkUnmute;
 
     private GoogleApiClient mGoogleApiClient;
 
@@ -56,11 +62,14 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
                 .addOnConnectionFailedListener(this)
                 .build();
 
-        mSharedPreferences = DataHelper.getSharedPreferences(this);
+        mSharedPreferences = PreferencesHelper.getSharedPreferences(this);
 
-        mChkWearToMobile = (CheckBox) findViewById(R.id.chk_wear_to_mobile);
-        mChkWearToMobile.setChecked(DataHelper.PREFERENCE.PREF_WEAR_TO_MOBILE_ENABLED.isEnabled(mSharedPreferences));
-        mChkWearToMobile.setOnClickListener(this);
+        mGroupMute = (RadioGroup) findViewById(R.id.grp_phone_ringer);
+        setMuteSelection(PreferencesHelper.getMutePhoneMode(mSharedPreferences));
+
+        mChkUnmute = (CheckBox) findViewById(R.id.chk_watch_unmute);
+        mChkUnmute.setChecked(PreferencesHelper.isUnmutePhoneEnabled(mSharedPreferences));
+        mChkUnmute.setOnCheckedChangeListener(this);
     }
 
     @Override
@@ -163,19 +172,47 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
         }
     }
 
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (DataHelper.PREFERENCE.PREF_WEAR_TO_MOBILE_ENABLED.value.equals(key)) {
-            mChkWearToMobile.setChecked(DataHelper.PREFERENCE.PREF_WEAR_TO_MOBILE_ENABLED.isEnabled(mSharedPreferences));
+    private void setMuteSelection(int preferenceValue) {
+        mGroupMute.setOnCheckedChangeListener(null);
+
+        switch (preferenceValue) {
+            case AudioManager.RINGER_MODE_SILENT:
+                mGroupMute.check(R.id.rdb_silent);
+                break;
+
+            case AudioManager.RINGER_MODE_VIBRATE:
+                mGroupMute.check(R.id.rdb_vibrate);
+                break;
+
+            default:
+                mGroupMute.check(R.id.rdb_none);
+                break;
+        }
+
+        mGroupMute.setOnCheckedChangeListener(this);
+    }
+
+    private int getMuteMode(@IdRes int resourceId) {
+        switch (resourceId) {
+            case R.id.rdb_silent:
+                return AudioManager.RINGER_MODE_SILENT;
+
+            case R.id.rdb_vibrate:
+                return AudioManager.RINGER_MODE_VIBRATE;
+
+            default:
+                return AudioManager.RINGER_MODE_NORMAL;
         }
     }
 
     @Override
-    public void onClick(View v) {
-        if (v == mChkWearToMobile) {
-            DataHelper.PREFERENCE prefKey = DataHelper.PREFERENCE.PREF_WEAR_TO_MOBILE_ENABLED;
-            prefKey.setEnabled(mSharedPreferences, mChkWearToMobile.isChecked());
-            prefKey.syncEnabled(mGoogleApiClient, mChkWearToMobile.isChecked());
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (PreferencesHelper.PREF_MUTE_PHONE_MODE.equals(key)) {
+            setMuteSelection(PreferencesHelper.getMutePhoneMode(sharedPreferences));
+        } else if (PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED.equals(key)) {
+            mChkUnmute.setOnCheckedChangeListener(null);
+            mChkUnmute.setChecked(PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences));
+            mChkUnmute.setOnCheckedChangeListener(this);
         }
     }
 
@@ -225,6 +262,30 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
                 Intent emailIntent = new Intent(Intent.ACTION_SENDTO);
                 emailIntent.setData(emailUri);
                 startActivity(Intent.createChooser(emailIntent, "Send E-mail"));
+            }
+        }
+    }
+
+    @Override
+    public void onCheckedChanged(RadioGroup group, int checkedId) {
+        int muteMode = getMuteMode(checkedId);
+
+        if (muteMode != PreferencesHelper.getMutePhoneMode(mSharedPreferences)) {
+            mSharedPreferences.edit()
+                    .putInt(PreferencesHelper.PREF_MUTE_PHONE_MODE, muteMode)
+                    .apply();
+            DataHelper.syncIntegerSetting(mGoogleApiClient, PreferencesHelper.PREF_MUTE_PHONE_MODE, muteMode);
+        }
+    }
+
+    @Override
+    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        if (buttonView == mChkUnmute) {
+            if (isChecked != PreferencesHelper.isUnmutePhoneEnabled(mSharedPreferences)) {
+                mSharedPreferences.edit()
+                        .putBoolean(PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED, mChkUnmute.isChecked())
+                        .apply();
+                DataHelper.syncBooleanSetting(mGoogleApiClient, PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED, mChkUnmute.isChecked());
             }
         }
     }

@@ -17,6 +17,7 @@ import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 import com.piusvelte.quiettime.BuildConfig;
 import com.piusvelte.quiettime.utils.DataHelper;
+import com.piusvelte.quiettime.utils.PreferencesHelper;
 
 import java.util.List;
 
@@ -34,7 +35,7 @@ public class WearDataListenerService extends WearableListenerService {
         super.onDataChanged(dataEvents);
 
         final List<DataEvent> events = FreezableUtils.freezeIterable(dataEvents);
-        SharedPreferences sharedPreferences = DataHelper.getSharedPreferences(this);
+        SharedPreferences sharedPreferences = PreferencesHelper.getSharedPreferences(this);
 
         for (DataEvent event : events) {
             DataItem dataItem = event.getDataItem();
@@ -43,7 +44,7 @@ public class WearDataListenerService extends WearableListenerService {
             if (DataHelper.WEAR_PATH_SETTINGS.equals(path)) {
                 DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItem);
                 DataMap dataMap = dataMapItem.getDataMap();
-                DataHelper.storeFromDataMap(sharedPreferences, dataMap);
+                PreferencesHelper.storeFromDataMap(sharedPreferences, dataMap);
             }
         }
     }

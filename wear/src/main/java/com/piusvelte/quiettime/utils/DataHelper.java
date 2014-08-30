@@ -1,7 +1,5 @@
 package com.piusvelte.quiettime.utils;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -9,7 +7,6 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.DataApi;
-import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
@@ -25,8 +22,6 @@ public class DataHelper {
 
     private static final String TAG = DataHelper.class.getSimpleName();
 
-    public static final String PREFS_NAME = "settings";
-
     public static final String WEAR_PATH_ZEN_MODE = "/zenmode";
     public static final String WEAR_PATH_SETTINGS = "/settings";
     public static final String WEAR_PATH_DEBUG = "/debug";
@@ -34,52 +29,25 @@ public class DataHelper {
 
     public static final String KEY_IN_ZEN_MODE = "in_zen_mode";
 
-    public enum PREFERENCE {
-        PREF_WEAR_TO_MOBILE_ENABLED("wear_to_mobile_enabled", true);
+    public static void syncBooleanSetting(@NonNull GoogleApiClient googleApiClient, @NonNull String key, boolean value) {
+        if (googleApiClient.isConnected()) {
+            PutDataMapRequest dataMapRequest = PutDataMapRequest.create(WEAR_PATH_SETTINGS);
+            dataMapRequest.getDataMap().putBoolean(key, value);
+            PutDataRequest request = dataMapRequest.asPutDataRequest();
 
-        public String value;
-        public boolean isEnabledDefault;
-
-        PREFERENCE(@NonNull String value, boolean isEnabledDefault) {
-            this.value = value;
-            this.isEnabledDefault = isEnabledDefault;
-        }
-
-        public boolean isEnabled(SharedPreferences sharedPreferences) {
-            return sharedPreferences.getBoolean(value, isEnabledDefault);
-        }
-
-        public boolean isEnabled(Context context) {
-            return isEnabled(getSharedPreferences(context));
-        }
-
-        public void setEnabled(SharedPreferences sharedPreferences, boolean isEnabled) {
-            sharedPreferences
-                    .edit()
-                    .putBoolean(value, isEnabled)
-                    .apply();
-        }
-
-        public void syncEnabled(@NonNull GoogleApiClient googleApiClient, boolean isEnabled) {
-            if (googleApiClient.isConnected()) {
-                PutDataMapRequest dataMapRequest = PutDataMapRequest.create(WEAR_PATH_SETTINGS);
-                dataMapRequest.getDataMap().putBoolean(value, isEnabled);
-                PutDataRequest request = dataMapRequest.asPutDataRequest();
-
-                PendingResult<DataApi.DataItemResult> pendingResult = Wearable.DataApi
-                        .putDataItem(googleApiClient, request);
-            }
+            PendingResult<DataApi.DataItemResult> pendingResult = Wearable.DataApi
+                    .putDataItem(googleApiClient, request);
         }
     }
 
-    public static SharedPreferences getSharedPreferences(Context context) {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-    }
+    public static void syncIntegerSetting(@NonNull GoogleApiClient googleApiClient, @NonNull String key, int value) {
+        if (googleApiClient.isConnected()) {
+            PutDataMapRequest dataMapRequest = PutDataMapRequest.create(WEAR_PATH_SETTINGS);
+            dataMapRequest.getDataMap().putInt(key, value);
+            PutDataRequest request = dataMapRequest.asPutDataRequest();
 
-    public static void storeFromDataMap(@NonNull SharedPreferences sharedPreferences, @NonNull DataMap dataMap) {
-        for (PREFERENCE key : PREFERENCE.values()) {
-            if (dataMap.containsKey(key.value))
-                key.setEnabled(sharedPreferences, dataMap.getBoolean(key.value, key.isEnabledDefault));
+            PendingResult<DataApi.DataItemResult> pendingResult = Wearable.DataApi
+                    .putDataItem(googleApiClient, request);
         }
     }
 
