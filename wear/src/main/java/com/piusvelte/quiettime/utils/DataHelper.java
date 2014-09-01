@@ -61,8 +61,9 @@ public class DataHelper {
         pendingResult.setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
             @Override
             public void onResult(DataApi.DataItemResult dataItemResult) {
-                if (BuildConfig.DEBUG)
+                if (BuildConfig.DEBUG) {
                     Log.d(TAG, "sync zen mode success? " + dataItemResult.getStatus().isSuccess());
+                }
             }
         });
     }

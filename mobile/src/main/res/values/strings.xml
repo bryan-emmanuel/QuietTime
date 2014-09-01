@@ -9,10 +9,11 @@
     <string name="error_not_connected">Error; not connected to Play Services. Please try again later.</string>
     <string name="error_no_watches">Error; no connected watches found. Please make sure a watch is connected, and try again.</string>
     <string name="message_request_debug">Getting debug, please wait.</string>
-    <string name="radio_description">When watch mutes, change phone to:</string>
-    <string name="radio_none">Neither</string>
-    <string name="radio_silent">Silent</string>
-    <string name="radio_vibrate">Vibrate</string>
-    <string name="chk_unmute">When watch unmutes, change phone to normal</string>
+    <string name="radio_description">Muting watch sets phone to</string>
+    <string name="radio_none">neither</string>
+    <string name="radio_silent">silent</string>
+    <string name="radio_vibrate">vibrate</string>
+    <string name="chk_unmute">Unmuting watch sets phone to normal</string>
+    <string name="chk_confirm">Vibrate phone to confirm change</string>
 
 </resources>

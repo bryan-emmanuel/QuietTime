@@ -2,10 +2,11 @@
 <resources>
 
     <string name="app_name">Quiet Time</string>
-    <string name="radio_description">Mute sets phone to:</string>
-    <string name="radio_none">Neither</string>
-    <string name="radio_silent">Silent</string>
-    <string name="radio_vibrate">Vibrate</string>
+    <string name="radio_description">Mute sets phone to</string>
+    <string name="radio_none">neither</string>
+    <string name="radio_silent">silent</string>
+    <string name="radio_vibrate">vibrate</string>
     <string name="chk_unmute">Unmute sets phone to normal</string>
+    <string name="chk_confirm">Vibrate phone to confirm change</string>
 
 </resources>

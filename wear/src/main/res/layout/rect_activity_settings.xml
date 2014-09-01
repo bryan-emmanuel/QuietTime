@@ -7,7 +7,6 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
         android:gravity="center_horizontal"
         android:orientation="vertical"
         android:paddingBottom="@dimen/activity_vertical_margin"
@@ -54,6 +53,13 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="@string/chk_unmute"
+            tools:checked="true" />
+
+        <CheckBox
+            android:id="@+id/chk_confirm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/chk_confirm"
             tools:checked="true" />
 
     </LinearLayout>

@@ -44,6 +44,7 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
     private SharedPreferences mSharedPreferences;
     private RadioGroup mGroupMute;
     private CheckBox mChkUnmute;
+    private CheckBox mChkConfirm;
 
     private GoogleApiClient mGoogleApiClient;
 
@@ -70,6 +71,10 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
         mChkUnmute = (CheckBox) findViewById(R.id.chk_watch_unmute);
         mChkUnmute.setChecked(PreferencesHelper.isUnmutePhoneEnabled(mSharedPreferences));
         mChkUnmute.setOnCheckedChangeListener(this);
+
+        mChkConfirm = (CheckBox) findViewById(R.id.chk_confirm);
+        mChkConfirm.setChecked(PreferencesHelper.isPhoneVibrateConfirmEnabled(mSharedPreferences));
+        mChkConfirm.setOnCheckedChangeListener(this);
     }
 
     @Override
@@ -208,11 +213,18 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (PreferencesHelper.PREF_MUTE_PHONE_MODE.equals(key)) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "muteMode changed to: " + PreferencesHelper.getMutePhoneMode(sharedPreferences));
             setMuteSelection(PreferencesHelper.getMutePhoneMode(sharedPreferences));
         } else if (PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED.equals(key)) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "unmute changed to: " + PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences));
             mChkUnmute.setOnCheckedChangeListener(null);
             mChkUnmute.setChecked(PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences));
             mChkUnmute.setOnCheckedChangeListener(this);
+        } else if (PreferencesHelper.PREF_PHONE_VIBRATE_CONFIRM_ENABLED.equals(key)) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "confirm changed to: " + PreferencesHelper.isPhoneVibrateConfirmEnabled(sharedPreferences));
+            mChkConfirm.setOnCheckedChangeListener(null);
+            mChkConfirm.setChecked(PreferencesHelper.isPhoneVibrateConfirmEnabled(sharedPreferences));
+            mChkConfirm.setOnCheckedChangeListener(this);
         }
     }
 
@@ -271,6 +283,7 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
         int muteMode = getMuteMode(checkedId);
 
         if (muteMode != PreferencesHelper.getMutePhoneMode(mSharedPreferences)) {
+            if (BuildConfig.DEBUG) Log.d(TAG, "save muteMode: " + muteMode);
             mSharedPreferences.edit()
                     .putInt(PreferencesHelper.PREF_MUTE_PHONE_MODE, muteMode)
                     .apply();
@@ -282,10 +295,19 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
         if (buttonView == mChkUnmute) {
             if (isChecked != PreferencesHelper.isUnmutePhoneEnabled(mSharedPreferences)) {
+                if (BuildConfig.DEBUG) Log.d(TAG, "save unmute: " + isChecked);
                 mSharedPreferences.edit()
-                        .putBoolean(PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED, mChkUnmute.isChecked())
+                        .putBoolean(PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED, isChecked)
                         .apply();
-                DataHelper.syncBooleanSetting(mGoogleApiClient, PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED, mChkUnmute.isChecked());
+                DataHelper.syncBooleanSetting(mGoogleApiClient, PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED, isChecked);
+            }
+        } else if (buttonView == mChkConfirm) {
+            if (isChecked != PreferencesHelper.isPhoneVibrateConfirmEnabled(mSharedPreferences)) {
+                if (BuildConfig.DEBUG) Log.d(TAG, "save confirm: " + isChecked);
+                mSharedPreferences.edit()
+                        .putBoolean(PreferencesHelper.PREF_PHONE_VIBRATE_CONFIRM_ENABLED, isChecked)
+                        .apply();
+                DataHelper.syncBooleanSetting(mGoogleApiClient, PreferencesHelper.PREF_PHONE_VIBRATE_CONFIRM_ENABLED, isChecked);
             }
         }
     }

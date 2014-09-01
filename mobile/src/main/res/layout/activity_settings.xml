@@ -13,53 +13,54 @@
         android:id="@+id/txt_open_wear_app"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/activity_vertical_margin"
         android:text="@string/about_message" />
 
-    <LinearLayout
+    <TextView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="center_vertical"
-        android:orientation="vertical">
+        android:layout_height="wrap_content"
+        android:text="@string/radio_description" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/radio_description" />
+    <RadioGroup
+        android:id="@+id/grp_phone_ringer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/activity_vertical_margin">
 
-        <RadioGroup
-            android:id="@+id/grp_phone_ringer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <RadioButton
-                android:id="@+id/rdb_silent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/radio_silent"
-                tools:checked="true" />
-
-            <RadioButton
-                android:id="@+id/rdb_vibrate"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/radio_vibrate" />
-
-            <RadioButton
-                android:id="@+id/rdb_none"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/radio_none" />
-
-        </RadioGroup>
-
-        <CheckBox
-            android:id="@+id/chk_watch_unmute"
+        <RadioButton
+            android:id="@+id/rdb_silent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="@string/chk_unmute"
+            android:text="@string/radio_silent"
             tools:checked="true" />
-    </LinearLayout>
+
+        <RadioButton
+            android:id="@+id/rdb_vibrate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/radio_vibrate" />
+
+        <RadioButton
+            android:id="@+id/rdb_none"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/radio_none" />
+
+    </RadioGroup>
+
+    <CheckBox
+        android:id="@+id/chk_watch_unmute"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/activity_vertical_margin"
+        android:text="@string/chk_unmute"
+        tools:checked="true" />
+
+    <CheckBox
+        android:id="@+id/chk_confirm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/chk_confirm"
+        tools:checked="true" />
 
 </LinearLayout>
