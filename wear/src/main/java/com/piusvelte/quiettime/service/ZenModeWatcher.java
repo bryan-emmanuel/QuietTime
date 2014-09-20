@@ -1,3 +1,22 @@
+/*
+ * Quiet Time - Wear Ringer Mode Sync
+ * Copyright (C) 2014 Bryan Emmanuel
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Bryan Emmanuel piusvelte@gmail.com
+ */
 package com.piusvelte.quiettime.service;
 
 import android.annotation.SuppressLint;
@@ -33,7 +52,7 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
      * 118 is when in_zen_mode is the only preference set
      * 165 is when peek_privacy_mode is also set
      */
-    private static final long[] ZEN_MODE_TRUE = new long[]{118, 165};
+    private static final long[] ZEN_MODE_TRUE = new long[]{ 118, 165 };
 
     /**
      * path for home_preferences.xml
@@ -56,8 +75,8 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
     private Runnable mScreenOnRunnable = new Runnable() {
         @Override
         public void run() {
-            checkZenMode();
-            // continue to check this every second, until the screen turns off
+            checkZenModeChanged();
+            // continue to check this until the screen turns off
             mScreenHandler.postDelayed(mScreenOnRunnable, SCREEN_ON_RUNNABLE_DELAY);
         }
     };
@@ -73,12 +92,13 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
                 .addApi(Wearable.API)
                 .addConnectionCallbacks(this)
                 .build();
+
         mGoogleApiClient.connect();
 
         setInZenMode(inZenMode());
 
         IntentFilter filter = new IntentFilter();
-        // for faster syncing, use screen off to post a delayed runnable
+        // for faster syncing, use screen on to post a delayed runnable
         filter.addAction(Intent.ACTION_SCREEN_ON);
         // use screen off as a trigger to check zen mode
         filter.addAction(Intent.ACTION_SCREEN_OFF);
@@ -91,7 +111,7 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
         if (intent != null) {
             if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
                 mScreenHandler.removeCallbacks(mScreenOnRunnable);
-                checkZenMode();
+                checkZenModeChanged();
             } else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
                 mScreenHandler.postDelayed(mScreenOnRunnable, SCREEN_ON_RUNNABLE_DELAY);
             }
@@ -108,11 +128,12 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
         super.onDestroy();
     }
 
+    /** get the byte size of the preferences file for the Wearable Home App SharedPreferences */
     public static long getHomePreferencesSize() {
         return HOME_PREFERENCES.length();
     }
 
-    private void checkZenMode() {
+    private void checkZenModeChanged() {
         boolean inZenMode = inZenMode();
 
         if (inZenMode ^ mPreviouslyInZenMode) {

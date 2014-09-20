@@ -1,3 +1,22 @@
+/*
+ * Quiet Time - Wear Ringer Mode Sync
+ * Copyright (C) 2014 Bryan Emmanuel
+ *
+ * This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *  Bryan Emmanuel piusvelte@gmail.com
+ */
 package com.piusvelte.quiettime.activity;
 
 import android.content.Intent;
@@ -213,15 +232,18 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (PreferencesHelper.PREF_MUTE_PHONE_MODE.equals(key)) {
-            if (BuildConfig.DEBUG) Log.d(TAG, "muteMode changed to: " + PreferencesHelper.getMutePhoneMode(sharedPreferences));
+            if (BuildConfig.DEBUG)
+                Log.d(TAG, "muteMode changed to: " + PreferencesHelper.getMutePhoneMode(sharedPreferences));
             setMuteSelection(PreferencesHelper.getMutePhoneMode(sharedPreferences));
         } else if (PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED.equals(key)) {
-            if (BuildConfig.DEBUG) Log.d(TAG, "unmute changed to: " + PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences));
+            if (BuildConfig.DEBUG)
+                Log.d(TAG, "unmute changed to: " + PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences));
             mChkUnmute.setOnCheckedChangeListener(null);
             mChkUnmute.setChecked(PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences));
             mChkUnmute.setOnCheckedChangeListener(this);
         } else if (PreferencesHelper.PREF_PHONE_VIBRATE_CONFIRM_ENABLED.equals(key)) {
-            if (BuildConfig.DEBUG) Log.d(TAG, "confirm changed to: " + PreferencesHelper.isPhoneVibrateConfirmEnabled(sharedPreferences));
+            if (BuildConfig.DEBUG)
+                Log.d(TAG, "confirm changed to: " + PreferencesHelper.isPhoneVibrateConfirmEnabled(sharedPreferences));
             mChkConfirm.setOnCheckedChangeListener(null);
             mChkConfirm.setChecked(PreferencesHelper.isPhoneVibrateConfirmEnabled(sharedPreferences));
             mChkConfirm.setOnCheckedChangeListener(this);
