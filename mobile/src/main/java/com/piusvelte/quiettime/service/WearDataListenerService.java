@@ -24,6 +24,7 @@ import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.os.Vibrator;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 import com.google.android.gms.common.data.FreezableUtils;
 import com.google.android.gms.wearable.DataEvent;
@@ -32,6 +33,7 @@ import com.google.android.gms.wearable.DataItem;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.WearableListenerService;
+import com.piusvelte.quiettime.BuildConfig;
 import com.piusvelte.quiettime.utils.DataHelper;
 import com.piusvelte.quiettime.utils.PreferencesHelper;
 
@@ -42,16 +44,18 @@ import java.util.List;
  */
 public class WearDataListenerService extends WearableListenerService {
 
+    private static final String TAG = WearDataListenerService.class.getSimpleName();
+
     @Override
     public void onDataChanged(DataEventBuffer dataEvents) {
-        super.onDataChanged(dataEvents);
-
         final List<DataEvent> events = FreezableUtils.freezeIterable(dataEvents);
         SharedPreferences sharedPreferences = PreferencesHelper.getSharedPreferences(this);
 
         for (DataEvent event : events) {
             DataItem dataItem = event.getDataItem();
             String path = dataItem.getUri().getPath();
+
+            if (BuildConfig.DEBUG) Log.d(TAG, "onDataChanged, path: " + path);
 
             if (DataHelper.WEAR_PATH_SETTINGS.equals(path)) {
                 DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItem);
@@ -62,6 +66,8 @@ public class WearDataListenerService extends WearableListenerService {
                 DataMap dataMap = dataMapItem.getDataMap();
                 boolean inZenMode = dataMap.getBoolean(DataHelper.KEY_IN_ZEN_MODE);
                 AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+
+                if (BuildConfig.DEBUG) Log.d(TAG, "onDataChanged, inZenMode? " + inZenMode);
 
                 if (inZenMode) {
                     if (PreferencesHelper.isMutePhoneEnabled(sharedPreferences)) {
