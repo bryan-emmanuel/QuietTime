@@ -39,6 +39,7 @@ public class PreferencesHelper {
     public static final String PREF_MUTE_PHONE_MODE = "mute_phone_mode";
     public static final String PREF_UNMUTE_PHONE_ENABLED = "unmute_phone_enabled";
     public static final String PREF_PHONE_VIBRATE_CONFIRM_ENABLED = "phone_vibrate_confim_enabled";
+    public static final String PREF_SHOW_NUE = "show_nue";
 
     private static final int PREF_MUTE_PHONE_MODE_DEFAULT = AudioManager.RINGER_MODE_SILENT;
     private static final boolean PREF_UNMUTE_PHONE_ENABLED_DEFAULT = true;

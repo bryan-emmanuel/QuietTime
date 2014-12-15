@@ -46,7 +46,7 @@ public class DataHelper {
 
     public static final String WEAR_PATH_ZEN_MODE = "/zenmode";
     public static final String WEAR_PATH_SETTINGS = "/settings";
-    public static final String WEAR_PATH_DEBUG = "/debug";
+    public static final String WEAR_PATH_SYNC = "/sync";
     public static final String WEAR_PATH_START_ZEN_WATCHER = "/startzenwatcher";
 
     public static final String KEY_IN_ZEN_MODE = "in_zen_mode";
@@ -81,11 +81,11 @@ public class DataHelper {
                 .setResultCallback(callback);
     }
 
-    public static void requestDebug(@NonNull GoogleApiClient googleApiClient, @NonNull List<Node> nodes,
-                                    @NonNull ResultCallback<MessageApi.SendMessageResult> callback) {
+    public static void requestSync(@NonNull GoogleApiClient googleApiClient, @NonNull List<Node> nodes,
+                                             @NonNull ResultCallback<MessageApi.SendMessageResult> callback) {
         for (Node node : nodes) {
             Wearable.MessageApi
-                    .sendMessage(googleApiClient, node.getId(), WEAR_PATH_DEBUG, null)
+                    .sendMessage(googleApiClient, node.getId(), WEAR_PATH_SYNC, null)
                     .setResultCallback(callback);
         }
     }

@@ -22,7 +22,7 @@
     <string name="app_name">Quiet Time</string>
     <string name="button_open_wear_app">Open watch app</string>
     <string name="action_about">About</string>
-    <string name="action_send_debug">Send Debug</string>
+    <string name="action_sync">Sync</string>
     <string name="about_message_short">Quiet Time mutes or unmutes the phone to match the connected watch.</string>
     <string name="about_message">Quiet Time mutes or unmutes the phone to match the connected watch.\n\nQuiet Time - Wear Ringer Mode Sync\nCopyright &#169; 2014 Bryan Emmanuel\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License along with this program.  If not, see \u003Chttp://www.gnu.org/licenses/\u003E.\n\nBryan Emmanuel piusvelte@gmail.com</string>
     <string name="error_not_connected">Error; not connected to Play Services. Please try again later.</string>
@@ -34,5 +34,9 @@
     <string name="radio_vibrate">vibrate</string>
     <string name="chk_unmute">Unmuting watch sets phone to normal</string>
     <string name="chk_confirm">Vibrate phone to confirm change</string>
+    <string name="sync_title">Sync</string>
+    <string name="sync_message">Mute the connected watch, then press OK to sync settings.</string>
+    <string name="nue_title">Recent changes</string>
+    <string name="nue_message">A recent Wear update may have broken Quiet Time. If Quiet Time is no longer muting your phone, mute your watch and then use the Sync menu button in the upper right.</string>
 
 </resources>

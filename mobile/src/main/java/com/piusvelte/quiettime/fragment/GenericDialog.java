@@ -22,19 +22,32 @@ package com.piusvelte.quiettime.fragment;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.os.Bundle;
+import android.support.annotation.StringRes;
 import android.support.v4.app.DialogFragment;
-
-import com.piusvelte.quiettime.R;
 
 /**
  * Created by bemmanuel on 8/24/14.
  */
-public class AboutDialog extends DialogFragment {
+public class GenericDialog extends DialogFragment {
+
+    private static final String ARG_TITLE = "title";
+    private static final String ARG_MESSAGE = "message";
+
+    public static GenericDialog newInstance(@StringRes int title, @StringRes int message) {
+        Bundle arguments = new Bundle();
+        arguments.putInt(ARG_TITLE, title);
+        arguments.putInt(ARG_MESSAGE, message);
+
+        GenericDialog genericDialog = new GenericDialog();
+        genericDialog.setArguments(arguments);
+        return genericDialog;
+    }
+
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         return new AlertDialog.Builder(getActivity())
-                .setTitle(R.string.action_about)
-                .setMessage(R.string.about_message)
+                .setTitle(getArguments().getInt(ARG_TITLE))
+                .setMessage(getArguments().getInt(ARG_MESSAGE))
                 .create();
     }
 }

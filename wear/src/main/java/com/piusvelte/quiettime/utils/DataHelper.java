@@ -24,7 +24,7 @@ public class DataHelper {
 
     public static final String WEAR_PATH_ZEN_MODE = "/zenmode";
     public static final String WEAR_PATH_SETTINGS = "/settings";
-    public static final String WEAR_PATH_DEBUG = "/debug";
+    public static final String WEAR_PATH_SYNC = "/sync";
     public static final String WEAR_PATH_START_ZEN_WATCHER = "/startzenwatcher";
 
     public static final String KEY_IN_ZEN_MODE = "in_zen_mode";
@@ -68,13 +68,13 @@ public class DataHelper {
         });
     }
 
-    public static void sendDebug(@NonNull GoogleApiClient googleApiClient, String nodeId, long homePreferencesSize) {
+    public static void sendSync(@NonNull GoogleApiClient googleApiClient, String nodeId, long homePreferencesSize) {
         if (googleApiClient.isConnected()) {
             if (BuildConfig.DEBUG) Log.d(TAG, "sendDebug: " + homePreferencesSize);
             byte[] payload = ByteBuffer.allocate(8).putLong(homePreferencesSize).array();
 
             PendingResult<MessageApi.SendMessageResult> pendingResult = Wearable.MessageApi
-                    .sendMessage(googleApiClient, nodeId, WEAR_PATH_DEBUG, payload);
+                    .sendMessage(googleApiClient, nodeId, WEAR_PATH_SYNC, payload);
             pendingResult.setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
                 @Override
                 public void onResult(MessageApi.SendMessageResult sendMessageResult) {

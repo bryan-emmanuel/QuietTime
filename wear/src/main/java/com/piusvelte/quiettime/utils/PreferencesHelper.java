@@ -35,10 +35,12 @@ public class PreferencesHelper {
 
     private static final String TAG = PreferencesHelper.class.getSimpleName();
 
-    public static final String PREFS_NAME = "settings";
+    private static final String PREFS_NAME = "settings";
     public static final String PREF_MUTE_PHONE_MODE = "mute_phone_mode";
     public static final String PREF_UNMUTE_PHONE_ENABLED = "unmute_phone_enabled";
     public static final String PREF_PHONE_VIBRATE_CONFIRM_ENABLED = "phone_vibrate_confim_enabled";
+
+    public static final String PREF_IN_ZEN_MODE_HOME_PREFERENCES_LENGTH = "in_zen_mode_home_preferences_length";
 
     private static final int PREF_MUTE_PHONE_MODE_DEFAULT = AudioManager.RINGER_MODE_SILENT;
     private static final boolean PREF_UNMUTE_PHONE_ENABLED_DEFAULT = true;
@@ -101,5 +103,15 @@ public class PreferencesHelper {
                         .apply();
             }
         }
+    }
+
+    public static void setInZenModeHomePreferencesLength(@NonNull SharedPreferences sharedPreferences, long length) {
+        sharedPreferences.edit()
+                .putLong(PREF_IN_ZEN_MODE_HOME_PREFERENCES_LENGTH, length)
+                .apply();
+    }
+
+    public static long getInZenModeHomePreferencesLength(@NonNull SharedPreferences sharedPreferences) {
+        return sharedPreferences.getLong(PREF_IN_ZEN_MODE_HOME_PREFERENCES_LENGTH, 0);
     }
 }

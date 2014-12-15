@@ -43,7 +43,7 @@ import java.io.File;
 /**
  * Created by bemmanuel on 8/22/14.
  */
-public class ZenModeWatcher extends Service implements GoogleApiClient.ConnectionCallbacks {
+public class ZenModeWatcher extends Service implements GoogleApiClient.ConnectionCallbacks, SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String TAG = ZenModeWatcher.class.getSimpleName();
 
@@ -52,7 +52,7 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
      * 118 is when in_zen_mode is the only preference set
      * 165 is when peek_privacy_mode is also set
      */
-    private static final long[] ZEN_MODE_TRUE = new long[]{ 118, 165 };
+    private static final long[] ZEN_MODE_TRUE = new long[]{118, 165};
 
     /**
      * path for home_preferences.xml
@@ -83,6 +83,8 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
 
     private Handler mScreenHandler = new Handler();
 
+    private long mInZenModeHomePreferencesLength = 0L;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -104,6 +106,10 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         mScreenOffReceiver = new ScreenReceiver();
         registerReceiver(mScreenOffReceiver, filter);
+
+        SharedPreferences sharedPreferences = PreferencesHelper.getSharedPreferences(this);
+        mInZenModeHomePreferencesLength = PreferencesHelper.getInZenModeHomePreferencesLength(sharedPreferences);
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
     }
 
     @Override
@@ -128,8 +134,10 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
         super.onDestroy();
     }
 
-    /** get the byte size of the preferences file for the Wearable Home App SharedPreferences */
-    public static long getHomePreferencesSize() {
+    /**
+     * get the byte size of the preferences file for the Wearable Home App SharedPreferences
+     */
+    public static long getHomePreferencesLength() {
         return HOME_PREFERENCES.length();
     }
 
@@ -145,9 +153,11 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
         }
     }
 
-    private static boolean inZenMode() {
-        long homePreferencesSize = getHomePreferencesSize();
+    private boolean inZenMode() {
+        long homePreferencesSize = getHomePreferencesLength();
         if (BuildConfig.DEBUG) Log.d(TAG, "inZenMode, file size: " + homePreferencesSize);
+
+        if (mInZenModeHomePreferencesLength > 0) return homePreferencesSize == mInZenModeHomePreferencesLength;
 
         for (long zenModeValue : ZEN_MODE_TRUE) {
             if (homePreferencesSize == zenModeValue) return true;
@@ -161,7 +171,7 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
         SharedPreferences sharedPreferences = PreferencesHelper.getSharedPreferences(this);
 
         if ((inZenMode && PreferencesHelper.isMutePhoneEnabled(sharedPreferences))
-            || (!inZenMode && PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences))) {
+                || (!inZenMode && PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences))) {
             if (mGoogleApiClient.isConnected()) {
                 mPendingZenModeChange = null;
                 DataHelper.syncZenMode(mGoogleApiClient, mPreviouslyInZenMode);
@@ -186,5 +196,12 @@ public class ZenModeWatcher extends Service implements GoogleApiClient.Connectio
     @Override
     public void onConnectionSuspended(int i) {
         // NO-OP
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (PreferencesHelper.PREF_IN_ZEN_MODE_HOME_PREFERENCES_LENGTH.equals(key)) {
+            mInZenModeHomePreferencesLength = PreferencesHelper.getInZenModeHomePreferencesLength(sharedPreferences);
+        }
     }
 }

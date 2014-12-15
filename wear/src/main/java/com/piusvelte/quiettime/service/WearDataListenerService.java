@@ -73,12 +73,15 @@ public class WearDataListenerService extends WearableListenerService {
         super.onMessageReceived(messageEvent);
         if (BuildConfig.DEBUG) Log.d(TAG, "message received: " + messageEvent.getPath());
 
-        if (DataHelper.WEAR_PATH_DEBUG.equals(messageEvent.getPath())) {
+        if (DataHelper.WEAR_PATH_SYNC.equals(messageEvent.getPath())) {
             final String nodeId = messageEvent.getSourceNodeId();
+            final long homePreferencesLength = ZenModeWatcher.getHomePreferencesLength();
+            SharedPreferences sharedPreferences = PreferencesHelper.getSharedPreferences(this);
+            PreferencesHelper.setInZenModeHomePreferencesLength(sharedPreferences, homePreferencesLength);
 
             if (mGoogleApiClient != null) {
                 if (mGoogleApiClient.isConnected()) {
-                    DataHelper.sendDebug(mGoogleApiClient, nodeId, ZenModeWatcher.getHomePreferencesSize());
+                    DataHelper.sendSync(mGoogleApiClient, nodeId, homePreferencesLength);
                 } else {
                     if (BuildConfig.DEBUG) Log.d(TAG, "connect client");
                     mGoogleApiClient.connect();
@@ -91,7 +94,7 @@ public class WearDataListenerService extends WearableListenerService {
                         .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                             @Override
                             public void onConnected(Bundle bundle) {
-                                DataHelper.sendDebug(mGoogleApiClient, nodeId, ZenModeWatcher.getHomePreferencesSize());
+                                DataHelper.sendSync(mGoogleApiClient, nodeId, homePreferencesLength);
                             }
 
                             @Override

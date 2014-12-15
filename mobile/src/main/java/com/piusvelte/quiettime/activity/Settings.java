@@ -19,14 +19,11 @@
  */
 package com.piusvelte.quiettime.activity;
 
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.IdRes;
 import android.support.v4.app.FragmentActivity;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -35,6 +32,9 @@ import android.widget.CompoundButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
+import com.google.android.gms.analytics.GoogleAnalytics;
+import com.google.android.gms.analytics.HitBuilders;
+import com.google.android.gms.analytics.Tracker;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
@@ -45,12 +45,12 @@ import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 import com.piusvelte.quiettime.BuildConfig;
 import com.piusvelte.quiettime.R;
-import com.piusvelte.quiettime.fragment.AboutDialog;
+import com.piusvelte.quiettime.fragment.GenericDialog;
+import com.piusvelte.quiettime.fragment.SyncDialog;
 import com.piusvelte.quiettime.utils.DataHelper;
 import com.piusvelte.quiettime.utils.PreferencesHelper;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -59,6 +59,7 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
         CompoundButton.OnCheckedChangeListener {
 
     private static final String TAG = Settings.class.getSimpleName();
+    private static final int NUE_VERSION = 1;
 
     private SharedPreferences mSharedPreferences;
     private RadioGroup mGroupMute;
@@ -67,8 +68,7 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
 
     private GoogleApiClient mGoogleApiClient;
 
-    private int mConnectedNodesSize = 0;
-    private List<Long> mDebugSizes = new ArrayList<Long>();
+    private Tracker mTracker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,6 +94,9 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
         mChkConfirm = (CheckBox) findViewById(R.id.chk_confirm);
         mChkConfirm.setChecked(PreferencesHelper.isPhoneVibrateConfirmEnabled(mSharedPreferences));
         mChkConfirm.setOnCheckedChangeListener(this);
+
+        GoogleAnalytics ga = GoogleAnalytics.getInstance(this);
+        mTracker = ga.newTracker("UA-57650363-1");
     }
 
     @Override
@@ -105,6 +108,15 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
     @Override
     protected void onResume() {
         super.onResume();
+
+        if (mSharedPreferences.getInt(PreferencesHelper.PREF_SHOW_NUE, 0) < NUE_VERSION) {
+            GenericDialog.newInstance(R.string.nue_title, R.string.nue_message)
+                    .show(getSupportFragmentManager(), "dialog:nue");
+            mSharedPreferences.edit()
+                    .putInt(PreferencesHelper.PREF_SHOW_NUE, NUE_VERSION)
+                    .apply();
+        }
+
         mSharedPreferences.registerOnSharedPreferenceChangeListener(this);
     }
 
@@ -133,62 +145,13 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
 
         switch (id) {
             case R.id.action_about:
-                new AboutDialog()
+                GenericDialog.newInstance(R.string.action_about, R.string.about_message)
                         .show(getSupportFragmentManager(), "dialog:about");
                 return true;
 
-            case R.id.action_send_debug:
-                if (!mGoogleApiClient.isConnected()) {
-                    Toast.makeText(Settings.this, R.string.error_not_connected, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(Settings.this, R.string.message_request_debug, Toast.LENGTH_SHORT).show();
-                    ResultCallback<NodeApi.GetConnectedNodesResult> connectedNodesResultResultCallback =
-                            new ResultCallback<NodeApi.GetConnectedNodesResult>() {
-                                @Override
-                                public void onResult(NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
-                                    if (getConnectedNodesResult == null) {
-                                        Toast.makeText(Settings.this, R.string.error_no_watches, Toast.LENGTH_SHORT).show();
-                                    } else {
-                                        List<Node> nodes = getConnectedNodesResult.getNodes();
-                                        mConnectedNodesSize = nodes.size();
-
-                                        if (mConnectedNodesSize == 0) {
-                                            Toast.makeText(Settings.this, R.string.error_no_watches, Toast.LENGTH_SHORT).show();
-                                        } else if (mGoogleApiClient.isConnected()) {
-                                            if (BuildConfig.DEBUG) {
-                                                Log.d(TAG, "found " + mConnectedNodesSize + " connected nodes");
-                                            }
-
-                                            ResultCallback<MessageApi.SendMessageResult> sendMessageResultResultCallback =
-                                                    new ResultCallback<MessageApi.SendMessageResult>() {
-                                                        @Override
-                                                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                                                            if (BuildConfig.DEBUG) {
-                                                                Log.d(TAG, "send message result success: " + sendMessageResult.getStatus()
-                                                                        .isSuccess());
-                                                            }
-
-                                                            if (!sendMessageResult.getStatus().isSuccess()) {
-                                                                mConnectedNodesSize--;
-
-                                                                if (BuildConfig.DEBUG) {
-                                                                    Log.d(TAG, "sent message failed");
-                                                                }
-                                                            }
-                                                        }
-                                                    };
-
-                                            DataHelper.requestDebug(mGoogleApiClient, nodes, sendMessageResultResultCallback);
-                                        } else {
-                                            Toast.makeText(Settings.this, R.string.error_not_connected, Toast.LENGTH_SHORT).show();
-                                        }
-                                    }
-                                }
-                            };
-
-                    mDebugSizes.clear();
-                    DataHelper.requestConnectedNodes(mGoogleApiClient, connectedNodesResultResultCallback);
-                }
+            case R.id.action_sync:
+                new SyncDialog()
+                        .show(getSupportFragmentManager(), "dialog:sync");
                 return true;
 
             default:
@@ -232,18 +195,24 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (PreferencesHelper.PREF_MUTE_PHONE_MODE.equals(key)) {
-            if (BuildConfig.DEBUG)
+            if (BuildConfig.DEBUG) {
                 Log.d(TAG, "muteMode changed to: " + PreferencesHelper.getMutePhoneMode(sharedPreferences));
+            }
+
             setMuteSelection(PreferencesHelper.getMutePhoneMode(sharedPreferences));
         } else if (PreferencesHelper.PREF_UNMUTE_PHONE_ENABLED.equals(key)) {
-            if (BuildConfig.DEBUG)
+            if (BuildConfig.DEBUG) {
                 Log.d(TAG, "unmute changed to: " + PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences));
+            }
+
             mChkUnmute.setOnCheckedChangeListener(null);
             mChkUnmute.setChecked(PreferencesHelper.isUnmutePhoneEnabled(sharedPreferences));
             mChkUnmute.setOnCheckedChangeListener(this);
         } else if (PreferencesHelper.PREF_PHONE_VIBRATE_CONFIRM_ENABLED.equals(key)) {
-            if (BuildConfig.DEBUG)
+            if (BuildConfig.DEBUG) {
                 Log.d(TAG, "confirm changed to: " + PreferencesHelper.isPhoneVibrateConfirmEnabled(sharedPreferences));
+            }
+
             mChkConfirm.setOnCheckedChangeListener(null);
             mChkConfirm.setChecked(PreferencesHelper.isPhoneVibrateConfirmEnabled(sharedPreferences));
             mChkConfirm.setOnCheckedChangeListener(this);
@@ -271,32 +240,19 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
     public void onMessageReceived(MessageEvent messageEvent) {
         if (BuildConfig.DEBUG) Log.d(TAG, "onMessageReceived: " + messageEvent.getPath());
 
-        if (DataHelper.WEAR_PATH_DEBUG.equals(messageEvent.getPath())) {
+        if (DataHelper.WEAR_PATH_SYNC.equals(messageEvent.getPath())) {
             long homePreferencesSize = ByteBuffer.wrap(messageEvent.getData()).getLong();
 
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "received homePreferencesSize: " + homePreferencesSize);
             }
 
-            mDebugSizes.add(homePreferencesSize);
-            mConnectedNodesSize--;
-
-            if (mConnectedNodesSize == 0) {
-                StringBuilder debugMessage = new StringBuilder("mailto:piusvelte@gmail.com")
-                        .append("?subject=")
-                        .append(getString(R.string.app_name))
-                        .append(" Debug")
-                        .append("&body=");
-
-                debugMessage.append(TextUtils.join(",", mDebugSizes));
-
-                if (BuildConfig.DEBUG) Log.d(TAG, "uri string: " + debugMessage.toString());
-
-                Uri emailUri = Uri.parse(debugMessage.toString());
-                Intent emailIntent = new Intent(Intent.ACTION_SENDTO);
-                emailIntent.setData(emailUri);
-                startActivity(Intent.createChooser(emailIntent, "Send E-mail"));
-            }
+            mTracker.send(new HitBuilders.EventBuilder()
+                    .setCategory(Settings.class.getSimpleName())
+                    .setAction("Sync")
+                    .setLabel("home_preferences")
+                    .setValue(homePreferencesSize)
+                    .build());
         }
     }
 
@@ -331,6 +287,57 @@ public class Settings extends FragmentActivity implements SharedPreferences.OnSh
                         .apply();
                 DataHelper.syncBooleanSetting(mGoogleApiClient, PreferencesHelper.PREF_PHONE_VIBRATE_CONFIRM_ENABLED, isChecked);
             }
+        }
+    }
+
+    public void startSync() {
+        if (!mGoogleApiClient.isConnected()) {
+            Toast.makeText(Settings.this, R.string.error_not_connected, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(Settings.this, R.string.message_request_debug, Toast.LENGTH_SHORT).show();
+            ResultCallback<NodeApi.GetConnectedNodesResult> connectedNodesResultResultCallback =
+                    new ResultCallback<NodeApi.GetConnectedNodesResult>() {
+                        @Override
+                        public void onResult(NodeApi.GetConnectedNodesResult getConnectedNodesResult) {
+                            if (getConnectedNodesResult == null) {
+                                Toast.makeText(Settings.this, R.string.error_no_watches, Toast.LENGTH_SHORT).show();
+                            } else {
+                                List<Node> nodes = getConnectedNodesResult.getNodes();
+                                int connectedNodesSize = nodes.size();
+
+                                if (connectedNodesSize == 0) {
+                                    Toast.makeText(Settings.this, R.string.error_no_watches, Toast.LENGTH_SHORT).show();
+                                } else if (mGoogleApiClient.isConnected()) {
+                                    if (BuildConfig.DEBUG) {
+                                        Log.d(TAG, "found " + connectedNodesSize + " connected nodes");
+                                    }
+
+                                    ResultCallback<MessageApi.SendMessageResult> sendMessageResultResultCallback =
+                                            new ResultCallback<MessageApi.SendMessageResult>() {
+                                                @Override
+                                                public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                                                    if (BuildConfig.DEBUG) {
+                                                        Log.d(TAG, "send message result success: " + sendMessageResult.getStatus()
+                                                                .isSuccess());
+                                                    }
+
+                                                    if (!sendMessageResult.getStatus().isSuccess()) {
+                                                        if (BuildConfig.DEBUG) {
+                                                            Log.d(TAG, "sent message failed");
+                                                        }
+                                                    }
+                                                }
+                                            };
+
+                                    DataHelper.requestSync(mGoogleApiClient, nodes, sendMessageResultResultCallback);
+                                } else {
+                                    Toast.makeText(Settings.this, R.string.error_not_connected, Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        }
+                    };
+
+            DataHelper.requestConnectedNodes(mGoogleApiClient, connectedNodesResultResultCallback);
         }
     }
 }
